@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Hahn.ApplicatonProcess.December2020.Api</name>
+    </assembly>
+    <members>
+        <member name="M:Hahn.ApplicatonProcess.December2020.Api.Controllers.ApplicantController.CreateApplicant(Hahn.ApplicatonProcess.December2020.Data.Models.Applicant)">
+            <summary>
+            Creates a new  Applicant.
+            </summary>
+            <remarks>
+            Sample request:
+            
+                POST api/CreateApplicant
+                {        
+                  "Name": "Micheal",
+                  "FamilyName": "Andrew",
+                  "Address": "Sydney,Australia" ,
+                  "CountryOfOrigin":"Australia",
+                  "EmailAddress":"mikeandrew@gmail.com",
+                  "Age":20,
+                  "Hired":true
+                }
+            </remarks>
+            <param name="applicant"></param>    
+            <returns>A url of newly created applicant</returns>
+            <response code="201">Returns a url of newly created applicant</response>
+            <response code="400">If the applicant object is invalid</response>     
+        </member>
+    </members>
+</doc>

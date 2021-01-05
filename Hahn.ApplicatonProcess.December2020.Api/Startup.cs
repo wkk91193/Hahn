@@ -14,6 +14,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection;
+using System.IO;
+using Serilog;
+
+
 namespace Hahn.ApplicatonProcess.December2020.Api
 {
     public class Startup
@@ -21,6 +26,11 @@ namespace Hahn.ApplicatonProcess.December2020.Api
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
+            Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .WriteTo.RollingFile(Path.Combine(
+                configuration["logFileName"], "Log-{Date}.txt"))
+            .CreateLogger();
         }
 
         public IConfiguration Configuration { get; }
@@ -33,10 +43,14 @@ namespace Hahn.ApplicatonProcess.December2020.Api
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Hahn.ApplicatonProcess.December2020.Api", Version = "v1" });
+                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                c.IncludeXmlComments(xmlPath);
             });
             ConfigureTransientServices(services);
             ConfigureRepositories(services);
             ConfigureEntityFramework(services);
+
         }
 
         private static void ConfigureTransientServices(IServiceCollection services)
@@ -59,7 +73,7 @@ namespace Hahn.ApplicatonProcess.December2020.Api
 
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory)
         {
             if (env.IsDevelopment())
             {
@@ -78,6 +92,7 @@ namespace Hahn.ApplicatonProcess.December2020.Api
             {
                 endpoints.MapControllers();
             });
+            loggerFactory.AddSerilog();
         }
     }
 }

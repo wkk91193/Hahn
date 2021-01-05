@@ -5,6 +5,7 @@ using Hahn.ApplicatonProcess.December2020.Domain.Repository;
 using Hahn.ApplicatonProcess.December2020.Domain.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,92 +18,225 @@ namespace Hahn.ApplicatonProcess.December2020.Api.Controllers
     public class ApplicantController : ControllerBase
     {
         private readonly IApplicantService _applicantService;
+        private readonly ILogger _logger;
 
-        public ApplicantController(IApplicantService applicantService)
+        public ApplicantController(IApplicantService applicantService, ILogger<ApplicantController> logger)
         {
             this._applicantService = applicantService;
+            this._logger = logger;
         }
 
+
+        /// <summary>
+        /// Creates a new  Applicant.
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     POST api/CreateApplicant
+        ///     {        
+        ///       "Name": "Micheal",
+        ///       "FamilyName": "Andrew",
+        ///       "Address": "Sydney,Australia" ,
+        ///       "CountryOfOrigin":"Australia",
+        ///       "EmailAddress":"mikeandrew@gmail.com",
+        ///       "Age":20,
+        ///       "Hired":true
+        ///     }
+        /// </remarks>
+        /// <param name="applicant"></param>    
+        /// <returns>A url of newly created applicant</returns>
+        /// <response code="201">Returns a url of newly created applicant</response>
+        /// <response code="400">Returns, errors,if the applicant object is invalid</response>     
         [HttpPost("CreateApplicant")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Consumes("application/json")]
-        public ActionResult<Applicant> CreateApplicant([FromBody] Applicant applicantModel)
+        public async Task<IActionResult> CreateApplicant([FromBody] Applicant applicant)
         {
-            if (applicantModel.IsValid(out IEnumerable<string> errors))
+            try
             {
-                var result = _applicantService.Create(applicantModel);
+                if (applicant.IsValid(out IEnumerable<string> errors))
+                {
+                    var result = await _applicantService.Create(applicant);
 
-                return CreatedAtAction(
-                   "CreateApplicant",
-                   new { URL = "api/Applicant/" + result.Id }, result);
+                    _logger.LogInformation("Succesfully created applicant @{object}, at @{url}", applicant, "api/Applicant/" + result.Id);
+
+                    return CreatedAtAction(nameof(GetApplicantById),
+                        new { id = result.Id }, "api/Applicant/" + result.Id);
+
+                }
+                else
+                {
+                    _logger.LogError("Invalid params at CreateApplicant Errors: {@errors}, Object:{@object}", errors, applicant);
+                    return BadRequest(errors);
+                }
             }
-            else
+            catch (Exception ex)
             {
-
-                return BadRequest(errors);
+                _logger.LogError("Internal Server error at CreateApplicant {@exception}", ex);
+                return StatusCode(StatusCodes.Status500InternalServerError, "Something went wrong");
+               
             }
-
         }
-
+        /// <summary>
+        ///Updates an existing applicant.
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     POST api/UpdateApplicant
+        ///     {  id:"1",      
+        ///       "Name": "Micheal",
+        ///       "FamilyName": "Andrew",
+        ///       "Address": "Melbourne,Australia" ,
+        ///       "CountryOfOrigin":"Australia",
+        ///       "EmailAddress":"mikeandrew123@gmail.com",
+        ///       "Age":22,
+        ///       "Hired":true
+        ///     }
+        /// </remarks>
+        /// <param name="applicant"></param>    
+        /// <response code="201">Returns the object of updated applicant</response>
+        /// <response code="400">Returns errors, if the applicant object is invalid</response> 
         [HttpPut("UpdateApplicant")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> UpdateApplicant([FromBody] Applicant applicantModel)
+        public async Task<IActionResult> UpdateApplicant([FromBody] Applicant applicant)
         {
-            if (applicantModel.IsValid(out IEnumerable<string> errors))
+            try
             {
-                var result = await _applicantService.Update(applicantModel);
+                if (applicant.IsValid(out IEnumerable<string> errors))
+                {
+                    var result = await _applicantService.Update(applicant);
 
-                return Ok(result);
+                    return CreatedAtAction(nameof(GetApplicantById),
+                        new { id = result.Id }, "api/Applicant/" + result.Id);
+                }
+                else
+                {
+                    _logger.LogError("Invalid params at UpdateApplicant Errors: {@errors}, Applicant:{@object} ", errors, applicant);
+                    return BadRequest(errors);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                return BadRequest(errors);
+                _logger.LogError("Internal Server error at UpdateApplicant {@Exception} ", ex);
+                return StatusCode(StatusCodes.Status500InternalServerError,"Something went wrong");
             }
         }
 
-
+        /// <summary>
+        ///Retrieves all applicants.
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     GET api/GetAllApplicants
+        /// </remarks>  
+        /// <response code="200">Returns the objects of existing applicants</response>
+        /// <response code="200">Returns No content if no existing applicants </response>
         [HttpGet("GetAllApplicants")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public IActionResult GetAllApplicants()
         {
-            var result = _applicantService.GetAll();
+            try
+            {
+                var result = _applicantService.GetAll();
 
-            return Ok(result);
+                if (result.Count() == 0)
+                    return Ok("No Content");
+
+                _logger.LogInformation("Successfully retrieved all applicants {@object}", result);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Internal Server error at GetAllApplicants {@exception} ", ex);
+                return StatusCode(StatusCodes.Status500InternalServerError,"Something went wrong");
+            }
         }
 
-
+        /// <summary>
+        ///Retrieves single applicant by Id.
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     GET api/GetApplicantById/1
+        /// </remarks>
+        /// <param name="id"></param>    
+        /// <response code="200">Returns the object existing applicant by Id</response>
+        /// <response code="200">Returns No Content </response>
+        /// <response code="400">Returns Invalid parameter </response>
         [HttpGet("GetApplicantById/{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public ActionResult<Applicant> GetApplicantById(int id)
         {
-
-            if (id > 0)
+            try
             {
-                var result = _applicantService.Get(id);
+                if (id > 0)
+                {
+                    var result = _applicantService.Get(id);
+                    if (result == null)
+                        return Ok("No Content");
 
-                return Ok(result);
+                    _logger.LogInformation("Successfully retrieved applicant by Id {@object}", result);
+                    return Ok(result);
+                }
+                else
+                {
+                    _logger.LogError("BadRequest at GetApplicantById @{id}", id);
+                    return BadRequest("Invalid parameters");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                return BadRequest();
+                _logger.LogError("Internal Server error at GetApplicantById @{exception} ", ex);
+                return StatusCode(StatusCodes.Status500InternalServerError, "Something went wrong");
             }
         }
 
+        /// <summary>
+        ///Delete single applicant by Id.
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     GET api/DeleteApplicantById/1
+        /// </remarks>
+        /// <param name="id"></param>    
+        /// <response code="200">Returns Success if deletion successful</response>
+        /// <response code="200">Returns No Content if no matching applicant </response>
+        /// <response code="400">Returns Invalid parameter </response>
         [HttpDelete("DeleteApplicantById/{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> DeleteApplicantById(int id)
         {
-            if (id > 0)
+            try
             {
-                var result = await _applicantService.Delete(id);
+                if (id > 0)
+                {
+                    var result = await _applicantService.Delete(id);
 
-                return Ok(result);
+                    if (!result)
+                        return Ok("No Content");
+
+                    _logger.LogInformation("Successfully deleted applicant by Id {@Id}", id);
+                    return Ok("Success");
+                }
+                else
+                {
+                    _logger.LogError("BadRequest at DeleteApplicantById {@Id} ", id);
+                    return BadRequest("Invalid parameter");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                return BadRequest();
+                _logger.LogError("Internal Server error at DeleteApplicantById {@exception} ", ex);
+                return StatusCode(StatusCodes.Status500InternalServerError, "Something went wrong");
             }
         }
 
