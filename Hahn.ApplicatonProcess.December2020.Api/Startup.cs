@@ -38,7 +38,7 @@ namespace Hahn.ApplicatonProcess.December2020.Api
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-
+            services.AddCors();
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
@@ -81,7 +81,9 @@ namespace Hahn.ApplicatonProcess.December2020.Api
                 app.UseSwagger();
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Hahn.ApplicatonProcess.December2020.Api v1"));
             }
-
+            app.UseCors(builder =>
+               builder.WithOrigins("http://localhost:8080")
+                   .AllowAnyHeader().AllowAnyMethod());
             app.UseHttpsRedirection();
 
             app.UseRouting();
