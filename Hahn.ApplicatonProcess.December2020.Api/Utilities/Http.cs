@@ -11,7 +11,7 @@ namespace Hahn.ApplicatonProcess.December2020.Api.Utilities
         {
            
 
-            private static readonly Lazy<HttpClient> lazyClient = new Lazy<HttpClient> (()=> new HttpClient(new WinHttpHandler()));
+            private static readonly Lazy<HttpClient> lazyClient = new Lazy<HttpClient> (()=> new HttpClient());
 
             // a private constructor
             private Http()
