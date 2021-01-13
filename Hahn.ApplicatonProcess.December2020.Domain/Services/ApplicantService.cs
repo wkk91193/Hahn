@@ -65,6 +65,11 @@ namespace Hahn.ApplicatonProcess.December2020.Domain.Services
                 return null;
         }
 
+        Applicant IApplicantService.Search(string keyword)
+        {
+            var result = _repository.Search(keyword);
+            return result;
+        }
     }
 
   

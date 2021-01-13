@@ -240,5 +240,48 @@ namespace Hahn.ApplicatonProcess.December2020.Api.Controllers
             }
         }
 
+        /// <summary>
+        ///Search applicants by Name and Family name.
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     POST api/SearchApplicants
+        ///     "Micheal"
+        ///
+        /// </remarks>  
+        /// <response code="200">Returns Success if match found</response>
+        /// <response code="204">Returns No Content if no matching applicant </response>
+        /// <response code="400">Returns Invalid parameter </response>
+        [HttpPost("SearchApplicants")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public ActionResult<Applicant> SearchApplicants([FromBody] string keyword)
+        {
+            try
+            {
+                if (keyword!=null)
+                {
+                    var result = _applicantService.Search(keyword);
+
+                    if (result==null)
+                        return Ok("No Content");
+
+                    _logger.LogInformation("Successfully fetched applicant {@keyword}", keyword);
+                    return Ok(result);
+                }
+                else
+                {
+                    _logger.LogError("BadRequest at SearchApplicants {@keyword} ", keyword);
+                    return BadRequest("Invalid parameter");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Internal Server error at SearchApplicants {@exception} ", ex);
+                return StatusCode(StatusCodes.Status500InternalServerError, "Something went wrong");
+            }
+        }
+
     }
 }

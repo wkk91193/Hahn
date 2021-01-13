@@ -18,5 +18,7 @@ namespace Hahn.ApplicatonProcess.December2020.Domain.Services.Interfaces
         IOrderedQueryable<Applicant> GetAll();
 
         Task<bool> Delete(int Id);
+
+        Applicant Search(string keyword);
     }
 }

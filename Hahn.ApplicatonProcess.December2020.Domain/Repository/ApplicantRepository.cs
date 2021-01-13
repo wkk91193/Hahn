@@ -102,5 +102,13 @@ namespace Hahn.ApplicatonProcess.December2020.Domain.Repository
             return success;
         }
 
+        public Applicant Search(string keyword)
+        {
+            var result = _databaseContext.Applicant
+                               .Where(x => keyword.Contains(x.Name) || keyword.Contains(x.FamilyName))
+                               .FirstOrDefault();
+
+            return result;
+        }
     }
 }
